@@ -60,6 +60,12 @@ class Computer:
             self.cpu.execute(self.memory)
 
 
+'''
+a 127
+m
+d 0
+v 23
+'''
 if __name__ == "__main__":
     c = Computer()
     c.execute()

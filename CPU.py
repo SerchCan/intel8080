@@ -53,6 +53,10 @@ class CPU:
         I = self.I
         if I == 0x00:
             print("no op")  # No Operation
+        elif I == 0x07:
+            self.RLC()
+        elif I == 0x0f:
+            self.RRC()
         elif I == 0x06 or I == 0x0e or I == 0x16 or I == 0x1e or I == 0x26 or I == 0x2e or I == 0x36 or I == 0x3e:
             self.MVI(Mem)
         elif I == 0xc6:
@@ -208,10 +212,40 @@ class CPU:
         self.setRegister("A",self.ALU.XOR())
 
     def DAA(self):
+        print("DAA")
         self.ALU.setOP1(self.getRegister("A"))
         self.setRegister("A",self.ALU.BCD())
 
+    def RLC(self):
+        print("RLC")
+        A = self.getRegister("A")
+        self.ALU.setOP1(A)
+        self.setRegister("A",self.ALU.RLC())
+    
+    def RRC(self):
+        print("RRC")
+        A = self.getRegister("A")
+        self.ALU.setOP1(A)
+        self.setRegister("A",self.ALU.RRC())
 
+
+'''
+OP 0X07
+rlc
+bits a la izquierda 
+m 0 v 7 a 128
+si el bit mas significativo vale 1, activar carry
+____
+OP 0x0f
+rrc
+bits a la derecha, bit mas significativo va al principio y activar carry dependiendo si esta activado
+___
+op 0x17
+RAL
+___
+op 0x1f
+RAR
+'''
 
 
 # 0xf6

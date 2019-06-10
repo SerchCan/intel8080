@@ -137,6 +137,10 @@ class ALU:
         res= ~self.op1
         return res
 
+    def SUB(self):
+        pass
+    
+
     def BCD(self):
         #value is int so...
         digits = str(self.op1)
@@ -176,6 +180,23 @@ class ALU:
             self.flags.setFlag("P", True)
         return res
     
+    def RLC(self):
+        A = self.op1
+        A = A<<1
+        carry = (A & 0x100)>>8
+        A = A&0xff
+        A = A | carry
+        self.flags.setFlag("C",carry)
+        return  A
+
+    def RRC(self):
+        A = self.op1
+        carry = (A&0x01)<<7
+        A = A>>1
+        A = A | carry
+        self.flags.setFlag("C",carry)
+        return  A
+
     #4 5 6 7
 if __name__ == "__main__":
     alu = ALU()
@@ -195,3 +216,10 @@ if __name__ == "__main__":
 
     print("BCD", alu.BCD())
     alu.flags.displayFlags()
+
+    print("RLC",hex(alu.RLC()))
+    alu.flags.displayFlags()
+    
+    print("RLC",hex(alu.RRC()))
+    alu.flags.displayFlags()
+
