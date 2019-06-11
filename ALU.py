@@ -16,6 +16,28 @@ class ALU:
     def setOP2(self, value):
         self.op2 = value
 
+    def updateFlags(self,res):
+        if res == 0:
+            self.flags.setFlag("Z", True)
+        else:
+            self.flags.setFlag("Z", False)
+        if (res & 0x80) == 0x80:
+            self.flags.setFlag("S", True)
+        else:
+            self.flags.setFlag("S", False)
+        self.checkParity(res)
+    
+    def checkParity(self,res):
+        # Parity
+        count = 0
+        for i in bin(res):
+            if i == "1":
+                count += 1
+        if(count % 2 == 0):
+            self.flags.setFlag("P", False)
+        else:
+            self.flags.setFlag("P", True)
+
     def ADD(self):
         temp1 = self.op1 & 0x0f
         temp2 = self.op2 & 0x0f
@@ -36,95 +58,28 @@ class ALU:
         else:
             self.flags.setFlag("C", False)
 
-        if res == 0:
-            self.flags.setFlag("Z", True)
-        else:
-            self.flags.setFlag("Z", False)
-        if (res & 0x80) == 0x80:
-            self.flags.setFlag("S", True)
-        else:
-            self.flags.setFlag("S", False)
-        # Parity
-        count = 0
-        for i in bin(res):
-            if i == "1":
-                count += 1
-        if(count % 2 == 0):
-            self.flags.setFlag("P", False)
-        else:
-            self.flags.setFlag("P", True)
+        self.updateFlags(res)
         return res
 
     def AND(self):
         res = self.op1 & self.op2
         self.flags.setFlag("C", False)
         self.flags.setFlag("A", False)
-        if res == 0:
-            self.flags.setFlag("Z", True)
-        else:
-            self.flags.setFlag("Z", False)
-        if (res & 0x80) == 0x80:
-            self.flags.setFlag("S", True)
-        else:
-            self.flags.setFlag("S", False)
-        
-        # Parity
-        count = 0
-        for i in bin(res):
-            if i == "1":
-                count += 1
-        if(count % 2 == 0):
-            self.flags.setFlag("P", False)
-        else:
-            self.flags.setFlag("P", True)
+        self.updateFlags(res)
         return res
 
     def OR(self):
         res = self.op1 | self.op2
         self.flags.setFlag("C", False)
         self.flags.setFlag("A", False)
-        if res == 0:
-            self.flags.setFlag("Z", True)
-        else:
-            self.flags.setFlag("Z", False)
-        if (res & 0x80) == 0x80:
-            self.flags.setFlag("S", True)
-        else:
-            self.flags.setFlag("S", False)
-        
-        # Parity
-        count = 0
-        for i in bin(res):
-            if i == "1":
-                count += 1
-        if(count % 2 == 0):
-            self.flags.setFlag("P", False)
-        else:
-            self.flags.setFlag("P", True)
+        self.updateFlags(res)
         return res
         
     def XOR(self):
         res = self.op1 ^ self.op2
         self.flags.setFlag("C", False)
         self.flags.setFlag("A", False)
-        if res == 0:
-            self.flags.setFlag("Z", True)
-        else:
-            self.flags.setFlag("Z", False)
-        if (res & 0x80) == 0x80:
-            self.flags.setFlag("S", True)
-        else:
-            self.flags.setFlag("S", False)
-        
-        # Parity
-        count = 0
-        for i in bin(res):
-            if i == "1":
-                count += 1
-        if(count % 2 == 0):
-            self.flags.setFlag("P", False)
-        else:
-            self.flags.setFlag("P", True)
+        self.updateFlags(res)
         return res
 
     def NOT(self):
@@ -160,24 +115,7 @@ class ALU:
             self.flags.setFlag("C", True)
         else:
             self.flags.setFlag("C", False)
-        if res == 0:
-            self.flags.setFlag("Z", True)
-        else:
-            self.flags.setFlag("Z", False)
-        if (res & 0x80) == 0x80:
-            self.flags.setFlag("S", True)
-        else:
-            self.flags.setFlag("S", False)
-        
-        # Parity
-        count = 0
-        for i in bin(res):
-            if i == "1":
-                count += 1
-        if(count % 2 == 0):
-            self.flags.setFlag("P", False)
-        else:
-            self.flags.setFlag("P", True)
+        self.updateFlags(res)
         return res
     
     def RLC(self):
@@ -211,7 +149,7 @@ if __name__ == "__main__":
     alu.flags.displayFlags()
     print("NOT",alu.NOT())
     alu.flags.displayFlags()
-    print("ADDI:", alu.ADD())
+    print("ADD:", alu.ADD())
     alu.flags.displayFlags()
 
     print("BCD", alu.BCD())

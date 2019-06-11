@@ -230,29 +230,36 @@ class CPU:
 
 
 '''
-OP 0X07
-rlc
-bits a la izquierda 
-m 0 v 7 a 128
-si el bit mas significativo vale 1, activar carry
-____
-OP 0x0f
-rrc
-bits a la derecha, bit mas significativo va al principio y activar carry dependiendo si esta activado
 ___
 op 0x17
 RAL
 ___
 op 0x1f
 RAR
+__
+===
+No afecta banderas
+===
+op 0x03 - 0x33
+INX
+__
+op 0x0b - 0x3b
+DCX
+===
+LDAX
+STAX
+
+vector x,y Magn,Angulo
+
 '''
 
 
 # 0xf6
 '''
     SBI SUB
-
     ======== Done
+    *RLC
+    *RRC
     *MOV
     *DAA
     *ORA
