@@ -45,10 +45,10 @@ class Computer:
             self.cpu.setRegister("L", value)
         elif instruction == "P":
             value = int(input("PC="))
-            self.cpu.setPC(value)
+            self.cpu.setPC(value,self.memory)
         elif instruction == "S":
             value = int(input("SP="))
-            self.cpu.setSP(value)
+            self.cpu.setSP(value,self.memory)
         elif instruction == "M":
             addr = int(input("Dir="))
             self.memory.getMemory(addr)
