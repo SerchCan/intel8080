@@ -6,13 +6,14 @@ class Memory:
             self.Memory.append(0)
 
     def getMemory(self, PC):
-        return self.Memory[PC]
+            self.Memory[PC%self.getSize()]
 
     def getSize(self):
         return self.size
 
     def setMemory(self, PC, value):
-        self.Memory[PC] = value
+        if PC >= 0x2000 and PC <=0x23ff:
+            self.Memory[PC%self.getSize()] = value
 
     def Write(self, file):
         with open(file, "w") as openFile:
@@ -29,6 +30,9 @@ class Memory:
                     self.Memory[i] = int(c)
                     i += 1
 
+#pantalla esquina sup izq y de izq a derecha
+# la pantalla se voltea 90 grados
+#walkofmind.com/programming/side/hardware.htm
 
 if __name__ == "__main__":
     memory = Memory()
