@@ -8,12 +8,17 @@ class CPU:
     def __init__(self):
         self.ALU = ALU()
         self.PC = Registro()
-        self.SP = Registro(0xff)
+        self.SP = Registro(0xffff)
         self.REGISTERS = Registros()
         self.halt = False
+        self.INTE = False #if True not allow interruptions
+        self.interruptionNumber = 0
         self.I = 0
         self.Indexes = ["B", "C", "D", "E", "H", "L", "M", "A"]
 
+    def setInterruptionNumber(self,number):
+        self.interruptionNumber = number
+       
     def getStatus(self):
         return self.halt
 
@@ -24,10 +29,10 @@ class CPU:
         return self.ALU
 
     def getPC(self):
-        return self.PC
+        return self.PC.getValue()
 
     def getSP(self):
-        return self.SP
+        return self.SP.getValue()
 
     def getRegister(self,index):
         return self.REGISTERS.getRegister(index)
@@ -37,30 +42,36 @@ class CPU:
     def setRegister(self, index, value):
         self.REGISTERS.setRegister(index, value)
 
-    def setPC(self, value):
-        self.PC.setValue(value)
+    def setPC(self, value,Mem):
+        self.PC.setValue(value % Mem.getSize()) 
 
-    def setSP(self, value):
-        self.SP.setValue(value)
+    def setSP(self, value,Mem):
+        self.SP.setValue(value % Mem.getSize())
 
     def plusOnePC(self,Mem):
         self.PC.setValue( (self.PC.getValue()+1)%Mem.getSize())
 
-    def execute(self, Mem):
+    def execute(self, Mem, Ports):
         pc = self.PC.getValue()
         self.I = Mem.getMemory(pc)
 
         I = self.I
         if I == 0x00:
-            print("no op")  # No Operation
+            self.NOP(Mem)
         elif I == 0x07:
-            self.RLC()
+            self.RLC(Mem)
+        elif I == 0x17:
+            self.RAL(Mem)
         elif I == 0x0f:
-            self.RRC()
-        elif I == 0x06 or I == 0x0e or I == 0x16 or I == 0x1e or I == 0x26 or I == 0x2e or I == 0x36 or I == 0x3e:
+            self.RRC(Mem)
+        elif I == 0x1f:
+            self.RAR(Mem)
+        elif I in [0x06, 0x0e, 0x16, 0x1e, 0x26, 0x2e, 0x36, 0x3e]:
             self.MVI(Mem)
         elif I == 0xc6:
             self.ADI(Mem)
+        elif I == 0xde:
+            self.SBI(Mem)
         elif I == 0xe6:
             self.ANI(Mem)
         elif I == 0xee:
@@ -68,12 +79,100 @@ class CPU:
         elif I == 0xf6:
             self.ORI(Mem)
         elif I == 0x2f:
-            self.CMA()
+            self.CMA(Mem)
         elif I == 0x27:
-            self.DAA()
+            self.DAA(Mem)
+        elif I in [0x0a,0x1a]:
+            self.LDAX(Mem)
+        elif I in [0x02,0x12]:
+            self.STAX(Mem)
+        elif I == 0xc3:
+            self.JMP(Mem)
+        elif I == 0xda:
+            self.JC(Mem)
+        elif I == 0xd2:
+            self.JNC(Mem)
+        elif I == 0xfa:
+            self.JM(Mem)
+        elif I == 0xf2:
+            self.JP(Mem)
+        elif I == 0xe2:
+            self.JPO(Mem)
+        elif I == 0xea:
+            self.JPE(Mem)
+        elif I == 0xca:
+            self.JZ(Mem)
+        elif I == 0xc2:
+            self.JNZ(Mem)
+        elif I == 0xe9:
+            self.PCHL(Mem)
+        elif I == 0x2a:
+            self.LHLD(Mem)
+        elif I == 0x22:
+            self.SHLD(Mem)
+        elif I == 0xeb:
+            self.XCHG(Mem)
+        elif I == 0xcd:
+            self.CALL(Mem)
+        elif I == 0xdc:
+            self.CC(Mem)
+        elif I == 0xd4:
+            self.CNC(Mem)
+        elif I == 0xf4:
+            self.CP(Mem)
+        elif I == 0xfc:
+            self.CM(Mem)
+        elif I == 0xec:
+            self.CPE(Mem)
+        elif I == 0xe4:
+            self.CPO(Mem)
+        elif I == 0xc4:
+            self.CNZ(Mem)
+        elif I == 0xcc:
+            self.CZ(Mem)
+        elif I == 0xc9:
+            self.RET(Mem)
+        elif I == 0xd8:
+            self.RC(Mem)
+        elif I == 0xd0:
+            self.RNC(Mem)
+        elif I == 0xc8:
+            self.RZ(Mem)
+        elif I == 0xc0:
+            self.RNZ(Mem)
+        elif I == 0xf0:
+            self.RP(Mem)
+        elif I == 0xf8:
+            self.RM(Mem)
+        elif I == 0xe8:
+            self.RPE(Mem)
+        elif I == 0xe0:
+            self.RPO(Mem)
+        elif I == 0xf3:
+            self.DI(Mem)
+        elif I == 0xfb:
+            self.EI(Mem)
+        elif I == 0xdb:
+            self.IN(Mem,Ports)
+        elif I == 0x3f:
+            self.CMC(Mem)
+        elif I == 0xd3:
+            self.OUT(Mem,Ports)
+        elif I in [0xc7,0xcf,0xd7,0xdf,0xe7,0xef,0xf7,0xff]:
+            self.RST(Mem)
+        elif I in [0xc5,0xd5,0xe5,0xf5]:
+            self.PUSH(Mem)
+        elif I in [0xc1,0xd1,0xe1,0xf1]:
+            self.POP(Mem)
+        elif I in [0x03, 0x13, 0x23, 0x33]:
+            self.INX(Mem)
+        elif I in [0x0b, 0x1b, 0x2b, 0x3b]:
+            self.DCX(Mem)
         elif I in range(0x80,0x86) or I == 0x87:
             self.ADD(Mem)
-        elif I in range(0xa,0xa6) or I == 0xa7:
+        elif I in range(0x90,0x97):
+            self.SUB(Mem)
+        elif I in range(0xa0,0xa6) or I == 0xa7:
             self.ANA(Mem)
         elif I in range(0xa8,0xae) or I == 0xaf:
             self.XRA(Mem)
@@ -85,33 +184,50 @@ class CPU:
             self.HALT()
         else:
             print("Opcode desconocido")
-        self.plusOnePC(Mem)
+            self.NOP(Mem)
+
+        if self.INTE:
+            self.hardware_restart(Mem,self.interruptionNumber)
         return
+
+    def getInterruptionNumber(self):
+        return self.I & 0x38 << 3
+        
+    def hardware_restart(self,Mem,numberOfInterruption):
+        bitshift = self.I & 0xc7
+        self.I = Mem.getMemory(bitshift) | (numberOfInterruption << 3)
+        self.RST(Mem)
+    
     #DDDSSS
     def getSSS(self, value):
         return (value & 0x07)
 
     def getDDD(self, value):
         return (value & 0x38) >> 3
-        
+    # --XX----
+    def getXXPushPop(self,value):
+        return(value & 0x35) >> 4
+
     def HALT(self):
         self.halt = True
 
+    def NOP(self,Mem):
+        print("NO OP")
+        self.plusOnePC(Mem)
     def MOV(self,Mem):
         r = self.getDDD(self.I)
         s = self.getSSS(self.I)
-
-        if s is not 6:
+        if r!=6 and s != 6:
             self.setRegister(self.Indexes[r],self.getRegister(self.Indexes[s]))
         else:
             H = self.getRegister("H")
             L = self.getRegister("L")
             position = (H<<4) | L
-            if r == 6:
+            if r == 6 :
                 Mem.setMemory(position,self.getRegister(self.Indexes[s]))
             elif s == 6:
                 self.setRegister(self.Indexes[r],Mem.getMemory(position))
-            
+        self.plusOnePC(Mem)    
 
     def MVI(self, Mem):
         print("MVI")
@@ -124,6 +240,7 @@ class CPU:
             H = self.getRegister("H")
             L = self.getRegister("L")
             Mem.setMemory((H << 4) | L, Mem.getMemory(self.PC.getValue()))
+        self.plusOnePC(Mem)    
     
     def ADD(self,Mem):
         print("ADD")
@@ -138,7 +255,7 @@ class CPU:
             self.ALU.setOP2(Mem.getMemory((H << 4) | L))  
         
         self.setRegister("A",self.ALU.ADD())
-
+        self.plusOnePC(Mem)    
 
     def ADI(self, Mem):
         print("ADI")
@@ -146,6 +263,7 @@ class CPU:
         self.plusOnePC(Mem)
         self.ALU.setOP2(Mem.getMemory(self.PC.getValue()))
         self.setRegister("A", self.ALU.ADD())
+        self.plusOnePC(Mem)    
 
     def ANI(self, Mem):
         print("ANI")
@@ -153,6 +271,7 @@ class CPU:
         self.plusOnePC(Mem)
         self.ALU.setOP2(Mem.getMemory(self.PC.getValue()))
         self.setRegister("A", self.ALU.AND())
+        self.plusOnePC(Mem)    
     
     def ANA(self,Mem):
         print("ANA")
@@ -165,8 +284,35 @@ class CPU:
             L = self.getRegister("L")
             self.ALU.setOP2(Mem.getMemory((H << 4) | L)) 
         self.setRegister("A",self.ALU.AND())
+        self.plusOnePC(Mem)    
 
+    def SUB(self,Mem):
+        print("SUB")
+        r = self.getSSS(self.I)
+        self.ALU.setOP1(self.getRegister("A"))
+
+        if(r is not 6):
+            self.ALU.setOP2(self.getRegister(self.Indexes[r]))
+        else:
+            H = self.getRegister("H")
+            L = self.getRegister("L")
+            self.ALU.setOP2(Mem.getMemory((H << 4) | L))  
         
+        self.setRegister("A",self.ALU.SUB())
+        self.plusOnePC(Mem)   
+
+    def SBI(self,Mem):
+        print("SBI")
+        self.plusOnePC(Mem)
+        yy = Mem.getMemory(self.getPC())
+        B = self.ALU.getFlags().getFlag("C")
+        self.ALU.setOP1(yy)
+        self.ALU.setOP2(B)
+        yyMinusB = self.ALU.ADD()
+        self.ALU.setOP1(self.getRegister("A"))
+        self.ALU.setOP2(yyMinusB)
+        self.setRegister("A",self.ALU.SUB())
+        self.plusOnePC(Mem)
 
     def ORI(self, Mem):
         print("ORI")
@@ -174,6 +320,7 @@ class CPU:
         self.plusOnePC(Mem)
         self.ALU.setOP2(Mem.getMemory(self.PC.getValue()))
         self.setRegister("A", self.ALU.OR())
+        self.plusOnePC(Mem)    
 
     def ORA(self,Mem):
         print("XRA")
@@ -186,11 +333,13 @@ class CPU:
             L = self.getRegister("L")
             self.ALU.setOP2(Mem.getMemory((H << 4) | L)) 
         self.setRegister("A",self.ALU.OR())
+        self.plusOnePC(Mem)    
 
-    def CMA(self):
+    def CMA(self,Mem):
         print("CMA")
         self.ALU.setOP1(self.getRegister("A"))
         self.setRegister("A", self.ALU.NOT())
+        self.plusOnePC(Mem)    
 
     def XRI(self, Mem):
         print("XRI")
@@ -198,6 +347,7 @@ class CPU:
         self.plusOnePC(Mem)
         self.ALU.setOP2(Mem.getMemory(self.PC.getValue()))
         self.setRegister("A", self.ALU.XOR())
+        self.plusOnePC(Mem)    
     
     def XRA(self,Mem):
         print("XRA")
@@ -210,54 +360,550 @@ class CPU:
             L = self.getRegister("L")
             self.ALU.setOP2(Mem.getMemory((H << 4) | L)) 
         self.setRegister("A",self.ALU.XOR())
+        self.plusOnePC(Mem)    
 
-    def DAA(self):
+    def DAA(self,Mem):
         print("DAA")
         self.ALU.setOP1(self.getRegister("A"))
         self.setRegister("A",self.ALU.BCD())
+        self.plusOnePC(Mem)    
 
-    def RLC(self):
+    def RLC(self,Mem):
         print("RLC")
         A = self.getRegister("A")
         self.ALU.setOP1(A)
         self.setRegister("A",self.ALU.RLC())
-    
-    def RRC(self):
+        self.plusOnePC(Mem)    
+
+    def RAL(self,Mem):
+        print("RAL")
+        A = self.getRegister("A")
+        C = (A & 0x80) >> 7
+        self.ALU.getFlags().setFlag("C",C)
+        F = self.ALU.getFlags().getFlag("C")
+        A = (A << 1) & 0xff
+        self.setRegister("A",A|F)
+        self.plusOnePC(Mem)    
+
+    def RRC(self,Mem):
         print("RRC")
         A = self.getRegister("A")
         self.ALU.setOP1(A)
         self.setRegister("A",self.ALU.RRC())
+        self.plusOnePC(Mem)    
+
+    def RAR(self,Mem):
+        print("RAR")
+        A = self.getRegister("A")
+        C = (A & 0x01)
+        self.ALU.getFlags().setFlag("C",C)
+        F = self.ALU.getFlags().getFlag("C")
+        A = (A >> 1) & 0xff
+        self.setRegister("A",A|(F<<7))
+        self.plusOnePC(Mem)    
+
+    def DecodeAluPair(self,value):
+        high = (value & 0xF0) >> 4
+        low = (value & 0x0F)
+        return high,low
+
+    def DecodeRegisterPair(self, I):
+        return (I & 0x30) >> 4
+    
+    def INX(self,Mem):
+        print("INCX")
+        r = self.DecodeRegisterPair(self.I)
+        #bc, de, hl
+        if(r==0):
+            self.ALU.setOP1(self.getRegister("B"))
+            self.ALU.setOP2(self.getRegister("C"))
+            B,C = self.DecodeAluPair(self.ALU.INX())
+            self.setRegister("B",B)
+            self.setRegister("C",C)
+        elif r==1:
+            self.ALU.setOP1(self.getRegister("D"))
+            self.ALU.setOP2(self.getRegister("E"))
+            D,E = self.DecodeAluPair(self.ALU.INX())
+            self.setRegister("D",D)
+            self.setRegister("E",E)
+        elif r==2:
+            self.ALU.setOP1(self.getRegister("H"))
+            self.ALU.setOP2(self.getRegister("L"))
+            H,L = self.DecodeAluPair(self.ALU.INX())
+            self.setRegister("H",H)
+            self.setRegister("L",L)
+        else:
+            self.ALU.setOP1(self.SP.getValue())
+            catcher = self.ALU.INX(False)
+            self.SP.setValue(catcher)
+        self.plusOnePC(Mem)
+    
+    def DCX(self,Mem):
+        print("DCX")
+        r = self.DecodeRegisterPair(self.I)
+        #bc, de, hl
+        if(r==0):
+            self.ALU.setOP1(self.getRegister("B"))
+            self.ALU.setOP2(self.getRegister("C"))
+            B,C = self.DecodeAluPair(self.ALU.DCX())
+            self.setRegister("B",B)
+            self.setRegister("C",C)
+        elif r==1:
+            self.ALU.setOP1(self.getRegister("D"))
+            self.ALU.setOP2(self.getRegister("E"))
+            D,E = self.DecodeAluPair(self.ALU.DCX())
+            self.setRegister("D",D)
+            self.setRegister("E",E)
+        elif r==2:
+            self.ALU.setOP1(self.getRegister("H"))
+            self.ALU.setOP2(self.getRegister("L"))
+            H,L = self.DecodeAluPair(self.ALU.DCX())
+            self.setRegister("H",H)
+            self.setRegister("L",L)
+        else:
+            self.ALU.setOP1(self.SP.getValue())
+            catcher = self.ALU.DCX(False)
+            self.SP.setValue(catcher)
+        self.plusOnePC(Mem)   
+
+    def regPairMask(self,I):
+        return (I & 0x10)>>4
+
+    def LDAX(self,Mem) :
+        print("LDAX")
+        I = self.I
+        r = self.regPairMask(I)
+        memPos = 0
+        if r == 0:
+            self.ALU.setOP1(self.getRegister("B"))
+            self.ALU.setOP2(self.getRegister("C"))
+            memPos =  self.ALU.doMemoryPair()
+        else:
+            self.ALU.setOP1(self.getRegister("D"))
+            self.ALU.setOP2(self.getRegister("E"))
+            memPos =  self.ALU.doMemoryPair()
+
+        self.setRegister("A",Mem.getMemory(memPos))
+        self.plusOnePC(Mem)
+    
+    def STAX(self,Mem):
+        print("STAX")
+        I = self.I
+        r = self.regPairMask(I)
+        memPos = 0
+        if r == 0:
+            self.ALU.setOP1(self.getRegister("B"))
+            self.ALU.setOP2(self.getRegister("C"))
+            memPos =  self.ALU.doMemoryPair()
+        else:
+            self.ALU.setOP1(self.getRegister("D"))
+            self.ALU.setOP2(self.getRegister("E"))
+            memPos =  self.ALU.doMemoryPair()
+        
+        Mem.setMemory(memPos,self.getRegister("A"))
+        self.plusOnePC(Mem)
+    def JMP(self,Mem):
+        print("JMP")
+        qq = Mem.getMemory(self.PC.getValue()+1)
+        pp = Mem.getMemory(self.PC.getValue()+2)
+        newPC = (pp<<8) | qq
+        
+        self.ALU.getFlags().setFlag("C",True)
+        self.setPC(newPC,Mem)
+    
+    def JC(self,Mem):
+        print("JC")
+        if(self.ALU.getFlags().getFlag("C")):
+            self.JMP(Mem)
+        else:
+            self.setPC((self.getPC()+3 ),Mem)
+    
+    def JNC(self,Mem):
+        print("JNC")
+        if(self.ALU.getFlags().getFlag("C")):
+            self.setPC((self.getPC()+3 ),Mem)
+        else:
+            self.JMP(Mem)
+
+    def JP(self,Mem):
+        print("JP")
+        if(self.ALU.getFlags().getFlag("S")):
+            self.setPC((self.getPC()+3 ),Mem)
+        else:
+            self.JMP(Mem)
+    
+    def JM(self,Mem):
+        print("JM")
+        if(self.ALU.getFlags().getFlag("S")):
+            self.JMP(Mem)
+        else:
+            self.setPC((self.getPC()+3 ),Mem)
+    
+    def JPO(self,Mem):
+        print("JPO")
+        if(self.ALU.getFlags().getFlag("P")):
+            self.setPC((self.getPC()+3 ),Mem)
+        else:
+            self.JMP(Mem)
+    
+    def JPE(self,Mem):
+        print("JPE")
+        if(self.ALU.getFlags().getFlag("P")):
+            self.JMP(Mem)
+        else:
+            self.setPC((self.getPC()+3 ),Mem)
+    
+    def JZ(self,Mem):
+        print("JZ")
+        if(self.ALU.getFlags().getFlag("Z")):
+            self.JMP(Mem)
+        else:
+            self.setPC((self.getPC()+3),Mem)
+    
+    def JNZ(self,Mem):
+        print("JNZ")
+        if(self.ALU.getFlags().getFlag("Z")):
+            self.setPC((self.getPC()+3),Mem)
+        else:
+            self.JMP(Mem)
+        
+    def PCHL(self,Mem):
+        print("PCHL")
+        H = self.getRegister("H")
+        L = self.getRegister("L")
+        self.ALU.setOP1(H)
+        self.ALU.setOP2(L)
+        position = self.ALU.doMemoryPair()
+        self.setPC(position,Mem)
+
+    def LHLD(self,Mem):
+        print("LHLD")
+        self.plusOnePC(Mem)
+        qq = Mem.getMemory(self.getPC())
+        self.plusOnePC(Mem)
+        pp = Mem.getMemory(self.getPC())
+
+        self.ALU.setOP1(pp)
+        self.ALU.setOP2(qq)
+        ppqq = self.ALU.doMemoryPair()
+
+        xx = Mem.getMemory(ppqq)
+        yy = Mem.getMemory(ppqq+1)
+        self.setRegister("H",yy)
+        self.setRegister("L",xx)
+        self.plusOnePC(Mem)
+    
+    def SHLD(self,Mem):
+        print("SHLD")
+        self.plusOnePC(Mem)
+        qq = Mem.getMemory(self.getPC())
+        self.plusOnePC(Mem)
+        pp = Mem.getMemory(self.getPC())
+
+        self.ALU.setOP1(pp)
+        self.ALU.setOP2(qq)
+        ppqq = self.ALU.doMemoryPair()
+
+        H = self.getRegister("H")
+        L = self.getRegister("L")
+        Mem.setMemory(ppqq,L)
+        Mem.setMemory(ppqq+1,H)
+        self.plusOnePC(Mem)
+
+    def XCHG(self,Mem):
+        print("XCHG")
+        D = self.getRegister("D")
+        E = self.getRegister("E")
+
+        self.setRegister("D",self.getRegister("H"))
+        self.setRegister("E",self.getRegister("L"))
+
+        self.setRegister("H",D)
+        self.setRegister("L",E)
+        self.plusOnePC(Mem)
+
+    def SPHL(self,Mem):
+        print("SPHL")
+        H = self.getRegister("H")
+        L = self.getRegister("L")
+        self.ALU.setOP1(H)
+        self.ALU.setOP2(L)
+        position = self.ALU.doMemoryPair()
+        self.setSP(position,Mem)
+        self.plusOnePC(Mem)
+
+    def PUSH(self,Mem):
+        print("PUSH")
+        I = self.I
+        r = self.getXXPushPop(I)
+
+        self.setSP(self.getSP()-2,Mem)
+        qq = 0
+        pp = 0
+        
+        if r == 0:
+            qq = self.getRegister("C")
+            pp = self.getRegister("B")
+        elif r == 1:
+            qq = self.getRegister("E")
+            pp = self.getRegister("D")
+        elif r == 2:
+            qq = self.getRegister("L")
+            pp = self.getRegister("H")
+        elif r == 3:
+            PSW = self.ALU.getFlags().getPSWRegister()
+            qq = PSW
+            pp = self.getRegister("A")
+        
+        Mem.setMemory(self.getSP(),qq)
+        Mem.setMemory(self.getSP()+1,pp)
+        self.plusOnePC(Mem)
+    
+    def POP(self,Mem):
+        print("POP")
+        I = self.I
+        r = self.getXXPushPop(I)
+        
+        XX,YY = self.DecodeAluPair(self.getSP())
+
+        if r == 0:
+            self.setRegister("C",YY)
+            self.setRegister("B",XX)
+        elif r == 1:
+            self.setRegister("E",YY)
+            self.setRegister("D",XX)
+        elif r == 2:
+            self.setRegister("L",YY)
+            self.setRegister("H",XX)
+        elif r == 3:
+            binValue=bin(YY)[2:]
+            var = ""
+            if len(binValue)<8:
+                for i in range(8-len(binValue)):
+                    var+="0"
+            var += binValue
+            self.ALU.getFlags().setPSWRegister(list(var))
+            self.setRegister("A",XX)
+        
+        self.setSP(self.getSP()+2,Mem)
+        self.plusOnePC(Mem)
+
+    def CALL(self,Mem):
+        print("CALL")
+        self.setSP(self.getSP()-2,Mem)
+        PC = self.getPC()
+        mmmm = PC+3
+        mm,mPlus3 = self.DecodeAluPair(mmmm)
+        Mem.setMemory(self.getSP(),mPlus3)
+        Mem.setMemory(self.getSP()+1,mm)
+        
+        qq=Mem.getMemory(PC+1)
+        pp=Mem.getMemory(PC+2)
+        newPC=(pp<<4) | qq
+        self.setPC(newPC,Mem)
+        return
+
+    def CC(self,Mem):
+        print("CC")
+        if self.ALU.getFlags().getFlag("C"):
+            self.CALL(Mem)
+        else:
+            self.setPC(self.getPC()+3,Mem)
+    
+    def CNC(self,Mem):
+        print("CNC")
+        if self.ALU.getFlags().getFlag("C"):
+            self.setPC(self.getPC()+3,Mem)
+        else:
+            self.CALL(Mem)
 
 
+    def CZ (self,Mem):
+        print("CZ")
+        if self.ALU.getFlags().getFlag("Z") :
+            self.CALL(Mem)
+        else:
+            self.setPC(self.getPC()+3,Mem)
+
+    def CNZ(self,Mem):
+        print("CNZ")
+        if self.ALU.getFlags().getFlag("Z") :
+            self.CALL(Mem)
+        else:
+            self.setPC(self.getPC()+3,Mem)
+
+
+    def CP (self,Mem):
+        print("CP")
+        if self.ALU.getFlags().getFlag("S") :
+            self.setPC(self.getPC()+3,Mem)
+        else:
+            self.CALL(Mem)
+
+    def CM(self,Mem):
+        print("CM")
+        if self.ALU.getFlags().getFlag("S") :
+            self.CALL(Mem)
+        else:
+            self.setPC(self.getPC()+3,Mem)
+
+
+    def CPE (self,Mem):
+        print("CPE")
+        if self.ALU.getFlags().getFlag("P") :
+            self.CALL(Mem)
+        else:
+            self.setPC(self.getPC()+3,Mem)
+
+    def CPO(self,Mem):
+        print("CPO")
+        if self.ALU.getFlags().getFlag("P") :
+            self.setPC(self.getPC()+3,Mem)
+        else:
+            self.CALL(Mem)
+
+    def RET(self,Mem):
+        print("RET")
+        sp = self.getSP()
+        qq= Mem.getMemory(sp)
+        pp= Mem.getMemory(sp+1)
+        
+        self.ALU.setOP1(pp)
+        self.ALU.setOP2(qq)
+        
+        self.setPC(self.ALU.doMemoryPair(),Mem)
+        self.setSP(sp+2,Mem)
+
+    def RC(self,Mem):
+        print("RC")
+        if self.ALU.getFlags().getFlag("C"):
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+    
+    def RNC(self,Mem):
+        print("RNC")
+        if self.ALU.getFlags().getFlag("C"):
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+
+    def RZ (self,Mem):
+        print("RZ")
+        if self.ALU.getFlags().getFlag("Z") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+    def RNZ(self,Mem):
+        print("RNZ")
+        if self.ALU.getFlags().getFlag("Z") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+
+    def RP (self,Mem):
+        print("RP")
+        if self.ALU.getFlags().getFlag("S") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+    def RM(self,Mem):
+        print("RM")
+        if self.ALU.getFlags().getFlag("S") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+
+    def RPE (self,Mem):
+        print("RPE")
+        if self.ALU.getFlags().getFlag("P") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+    def RPO(self,Mem):
+        print("RPO")
+        if self.ALU.getFlags().getFlag("P") :
+            self.RET(Mem)
+        else:
+            self.plusOnePC(Mem)
+
+    def DI(self,Mem):
+        print("DI")
+        self.INTE = True
+        self.plusOnePC(Mem)
+
+    def EI(self,Mem):
+        print("EI")
+        self.INTE = False
+        self.plusOnePC(Mem)
+
+    def IN(self,Mem,Ports):
+        print("IN")
+        self.plusOnePC(Mem)
+        
+        yy = Mem.getMemory(self.getPC())
+        xx = Ports.getPort(yy)
+
+        self.setRegister("A",xx)
+        self.plusOnePC(Mem)
+
+    def OUT(self,Mem,Ports):
+        print("OUT")
+        self.plusOnePC(Mem)
+        
+        yy = Mem.getMemory(self.getPC())
+        xx = self.getRegister("A")
+        
+        Ports.setPort(yy,xx)
+        self.plusOnePC(Mem)
+
+    def RST(self,Mem):
+        print("RST")
+        self.setSP(self.getSP()-2,Mem)
+        mmmmp2=self.getPC()+2
+        mm, mp2 = self.DecodeAluPair(mmmmp2)
+
+        Mem.setMemory(self.getSP(),mp2)
+        Mem.setMemory(self.getSP()+1,mm)
+        
+        self.setPC(self.getInterruptionNumber(),Mem)
+
+    def CMC(self,Mem):
+        print("CMC")
+        if self.getALU().getFlags().getFlag("C"):
+            self.getALU().getFlags().setFlag("C",False)
+        else:
+            self.getALU().getFlags().setFlag("C",True)
+        self.plusOnePC(Mem)
 '''
 ___
-op 0x17
-RAL
-___
-op 0x1f
-RAR
-__
-===
-No afecta banderas
-===
-op 0x03 - 0x33
-INX
-__
-op 0x0b - 0x3b
-DCX
-===
-LDAX
-STAX
 
-vector x,y Magn,Angulo
+cmp == sub
+cpi
+ADD family
+DAD
+DCR
+INR
+LDA
+LXI
+STA
+STC
+SUB family
+XTHL
 
 '''
-
 
 # 0xf6
 '''
-    SBI SUB
     ======== Done
+    *INX
+    *DCX
     *RLC
     *RRC
     *MOV
@@ -265,6 +911,8 @@ vector x,y Magn,Angulo
     *ORA
     *XRA
     *ANA
+    *SUB
+    *SBI
     *ADD
     *HLT
     *NOP
@@ -274,8 +922,37 @@ vector x,y Magn,Angulo
     *XRI
     *ORI
     *ADI
+    *LDAX
+    *STAX
+    *JMP
+    *JC JNC
+    *JP JM
+    *JPE JPO
+    *JNZ JZ
+    *PCHL
+    *LHLD
+    *SHLD
+    *XCHG
+    *SPHLs
+    *PUSH
+    *POP    
+    *CALL
+    *CC CNC
+    *CZ CNZ
+    *CP CNP
+    *CPE CPO
+    *RET
+    *RC RNC
+    *RZ  RNZ
+    *RP RMP
+    *RPE RPO
+    *DI EI
+    *CMC
+    -- puertos son 256 --
+    *IN 
+    *OUT
+    *RST // HW_RST
 '''
-
 
 if __name__ == "__main__":
     mem = Memory(2**2)
@@ -288,7 +965,7 @@ if __name__ == "__main__":
     mem.Load("file.bin")
     '''
     cpu = CPU()
-    cpu.execute(mem)
-    cpu.execute(mem)
-    cpu.execute(mem)
-    cpu.execute(mem)
+    #cpu.execute(mem)
+    #cpu.execute(mem)
+    #cpu.execute(mem)
+    #cpu.execute(mem)

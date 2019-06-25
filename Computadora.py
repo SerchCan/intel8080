@@ -1,5 +1,6 @@
 from CPU import CPU
 from Memoria import Memory
+from Puertos import Puertos
 
 
 class Computer:
@@ -7,7 +8,7 @@ class Computer:
         self.cpu = CPU()
         self.memory = Memory()
         self.memory.Load(rom)
-        # self.memory.Write("file.txt")
+        self.ports = Puertos()
 
     def execute(self):
         while not self.cpu.getStatus():
@@ -16,8 +17,8 @@ class Computer:
     def Prompt(self):
         self.cpu.getALU().displayFlags()
         self.cpu.getRegisters().displayRegisters()
-        print("PC =", hex(self.cpu.getPC().getValue()))
-        print("SP =", hex(self.cpu.getSP().getValue()))
+        print("PC =", hex(self.cpu.getPC()))
+        print("SP =", hex(self.cpu.getSP()))
         instruction = input(">").upper()
         if instruction == "Q":
             self.cpu.setStatus(True)  # halt
@@ -57,7 +58,9 @@ class Computer:
             filename = input("Nombre del archivo")
             self.memory.Write(filename)
         else:
-            self.cpu.execute(self.memory)
+            self.cpu.execute(self.memory, self.ports)
+
+        # Check if interruption
 
 
 '''
@@ -68,4 +71,7 @@ v 23
 '''
 if __name__ == "__main__":
     c = Computer()
+    for i in c.memory.Memory[0:20]:
+        print(hex(i), end=" ")
+
     c.execute()
