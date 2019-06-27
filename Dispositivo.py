@@ -26,3 +26,18 @@ class IODevice(IDevice, ODevice):
 if __name__ == "__main__":
     IO = IODevice()
     print(IO.getDevice())
+
+#tarjeta de video dispositivo, Memoria de salida
+#24ff 3fff
+'''
+procedude
+
+for addr 2400 3fff:
+
+    byte= memoryGet(m,addr)
+    for i=7 to 0: #bits
+        p = (byte >> i) & 0x01
+        pixelloation screen,
+'''
+    
+

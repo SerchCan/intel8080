@@ -6,13 +6,16 @@ class Memory:
             self.Memory.append(0)
 
     def getMemory(self, PC):
-            self.Memory[PC%self.getSize()]
+        return self.Memory[PC%self.getSize()]
+
+    def getScreenMemory(self):
+        return self.Memory[0x2400:0x4000]
 
     def getSize(self):
         return self.size
 
     def setMemory(self, PC, value):
-        if PC >= 0x2000 and PC <=0x23ff:
+        if PC >= 0x2000 and PC <=0x3fff:
             self.Memory[PC%self.getSize()] = value
 
     def Write(self, file):

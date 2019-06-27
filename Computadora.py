@@ -1,18 +1,27 @@
 from CPU import CPU
 from Memoria import Memory
 from Puertos import Puertos
-
-
+from Screen import Screen
+import pygame
 class Computer:
     def __init__(self, rom="invaders.rom"):
         self.cpu = CPU()
         self.memory = Memory()
         self.memory.Load(rom)
         self.ports = Puertos()
+        self.Screen = Screen()
 
     def execute(self):
+        instructions_per_frame=10
         while not self.cpu.getStatus():
-            self.Prompt()
+            for i in range(instructions_per_frame):
+                self.Prompt()
+            #screenDisplay
+            self.Screen.display(self.memory)
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == 274:
+                        pygame.quit()
 
     def Prompt(self):
         self.cpu.getALU().displayFlags()
@@ -70,8 +79,10 @@ d 0
 v 23
 '''
 if __name__ == "__main__":
+    
+    pygame.init()
     c = Computer()
-    for i in c.memory.Memory[0:20]:
-        print(hex(i), end=" ")
+    #for i in c.memory.Memory[0x2400:0x3fff]:
+    #    print(hex(i), end=" ")
 
     c.execute()

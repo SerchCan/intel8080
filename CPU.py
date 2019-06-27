@@ -186,8 +186,8 @@ class CPU:
             print("Opcode desconocido")
             self.NOP(Mem)
 
-        if self.INTE:
-            self.hardware_restart(Mem,self.interruptionNumber)
+        #if self.INTE:
+        #    self.hardware_restart(Mem,self.interruptionNumber)
         return
 
     def getInterruptionNumber(self):
