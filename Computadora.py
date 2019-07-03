@@ -2,33 +2,33 @@ from CPU import CPU
 from Memoria import Memory
 from Puertos import Puertos
 from Screen import Screen
-import pygame
 class Computer:
     def __init__(self, rom="invaders.rom"):
         self.cpu = CPU()
         self.memory = Memory()
         self.memory.Load(rom)
+
         self.ports = Puertos()
         self.Screen = Screen()
-
+    #push rrc ani call pop ret incx lxi
     def execute(self):
-        instructions_per_frame=10
+        instructions_per_frame=1000
         while not self.cpu.getStatus():
-            for i in range(instructions_per_frame):
+            i=0
+            while i < instructions_per_frame and not self.cpu.getStatus():
                 self.Prompt()
+                i += 1
             #screenDisplay
             self.Screen.display(self.memory)
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == 274:
-                        pygame.quit()
+            #input()
+            
 
     def Prompt(self):
         self.cpu.getALU().displayFlags()
         self.cpu.getRegisters().displayRegisters()
         print("PC =", hex(self.cpu.getPC()))
         print("SP =", hex(self.cpu.getSP()))
-        instruction = input(">").upper()
+        instruction = 0#input(">").upper()
         if instruction == "Q":
             self.cpu.setStatus(True)  # halt
         elif instruction == "A":
@@ -60,11 +60,11 @@ class Computer:
             self.cpu.setSP(value,self.memory)
         elif instruction == "M":
             addr = int(input("Dir="))
-            self.memory.getMemory(addr)
             value = int(input("Valor="))
+           
             self.memory.setMemory(addr, value)
         elif instruction == "W":
-            filename = input("Nombre del archivo")
+            filename = input("Nombre del archivo: ")
             self.memory.Write(filename)
         else:
             self.cpu.execute(self.memory, self.ports)
@@ -79,10 +79,5 @@ d 0
 v 23
 '''
 if __name__ == "__main__":
-    
-    pygame.init()
     c = Computer()
-    #for i in c.memory.Memory[0x2400:0x3fff]:
-    #    print(hex(i), end=" ")
-
     c.execute()

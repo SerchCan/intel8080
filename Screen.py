@@ -1,54 +1,69 @@
-import pygame;
+import pygame
 import numpy as np
 from Memoria import Memory
 class Screen():
     def __init__(self):
         pygame.init()
         self.matrix=None
-        self.size = width, height = 256,224
+        self.size = self.width,self.height = 224,256
         self.BLACK = 0,0,0
         self.WHITE = 255,255,255
         self.b=True
         self.Screen = pygame.display.set_mode(self.size)
-#2400 3fff
-#m=8
-#x=adr
-#b= -73728
-#y= m*x + b
+        self.Screen.fill(self.WHITE)
+        pygame.display.update()
 
     def createMatrix(self,mem):
         pixels=[]
         #obtain bits
         for i in mem:
-            for bit in range(7,-1,-1):
+            for bit in range(8):
                 px=(i>>bit) & 0x01
                 pixels.append(px)
+        
         #create array of numpy
         mat = np.array(pixels)
         #resize array of numpy for screen
-        mat = np.resize(mat,(256,224))
-        #transpose mat for getting correct data
-        self.matrix = mat.transpose()
-
-    def normal(self):
-        for i,row in enumerate(self.matrix):
-            for j,col in enumerate(row):
-                if col == 1:
-                    self.Screen.set_at((i,j),self.WHITE)
-                else:
-                    self.Screen.set_at((i,j),self.BLACK)
-        pygame.display.flip()
+        h, w = 256, 224
+        mat = np.resize(mat,(w,h))
+        mat = np.flipud(mat)
+        self.matrix = mat
         
 
+    def draw(self):
+        for i in range(self.width):
+            for j in range(self.height):
+                addr = self.matrix[i][j]
+                color = self.WHITE if addr else self.BLACK
+                self.Screen.set_at((i,j),color)
+            pygame.display.update()
+
+            
+    def createHMMatrix(self,Mem):
+        scr=[]
+        for i in range (0x4000-0x2400):
+            for b in range(8):
+                scr.append( (Mem[i] >> b) &0x01 )
+
+        scr = np.array(scr)
+
+        scr = np.resize(scr,(256,224))
+        scr = np.fliplr(scr)
+        scr = np.transpose(scr)
+        self.matrix = scr
+
+
     def load(self,Mem):
-        self.createMatrix(Mem.getScreenMemory())
-        self.normal()
+        self.createHMMatrix(Mem.getScreenMemory())
+        self.draw()
+        #self.setScreen(Mem)
 
     def display(self,Mem):
         self.load(Mem)
-    
-    def resetScreen(self,Mem):
-        self.load(Mem)
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == 274:
+                    pygame.quit()
 
 if __name__ == '__main__':
 

@@ -3,3 +3,7 @@
 *.rom
 testForDummies.py
 
+file.hex
+newFileCPU
+out
+rom

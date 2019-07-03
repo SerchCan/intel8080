@@ -32,6 +32,13 @@ class ALU:
 
     def checkParity(self, res):
         # Parity
+        '''
+
+        if (res % 2) == 0:
+            self.flags.setFlag("P", True)
+        else:
+            self.flags.setFlag("P", False)
+        '''
         count = 0
         for i in bin(res):
             if i == "1":
@@ -45,7 +52,6 @@ class ALU:
         temp1 = self.op1 & 0x0f
         temp2 = self.op2 & 0x0f
         res = temp1+temp2
-
         if(res > 0x0f):
             self.flags.setFlag("A", True)
         else:
@@ -60,7 +66,7 @@ class ALU:
             self.flags.setFlag("C", True)
         else:
             self.flags.setFlag("C", False)
-
+        
         self.updateFlags(res)
         return res
 
@@ -92,45 +98,54 @@ class ALU:
         self.flags.setFlag("C", False)
         self.flags.setFlag("P", False)
         self.flags.setFlag("A", False)
-        res = ~self.op1
+        res = (~self.op1)&0xff
         return res
 
-    def SUB(self):
-        cin=0
+    def SUB(self,carry=0):
+        value = self.op1 - self.op2 - carry
+        x = value & 0xff
+        if (((self.op1^value)^self.op2)&0x10) > 0:
+            self.flags.setFlag("A", True)
+        else:
+            self.flags.setFlag("A", False)
+    
+        if value>255:
+            self.flags.setFlag("C", True)
+        else:
+            self.flags.setFlag("C", False)
+
+        self.updateFlags(x)
+        return value & 0xff
+    '''
         v1 = self.op1 & 0x0f
         v2 = self.op2 & 0x0f
-        r = v1-v2 - cin
+
+        r = v1-v2 - carry
         if r > 15:
             self.flags.setFlag("A", True)
         else:
-            self.flags.setFlag("A", True)
+            self.flags.setFlag("A", False)
 
-        out = self.op1 - self.op2 - cin
+        out = self.op1 - self.op2 - carry
         self.updateFlags(out)
         return out & 0x00ff
-        '''    CO
-        0-0=0
-        0-1=1  1
-        1-0=1
-        1-1=0
+        value = self.op1 - self.op2  - carry
+        x = value & 0xFF
 
-        e1  e2  cin |cout    s
-        0   0   0   0   0
-        0   0   1   1   1
-        0   1   0   1   1
-        0   1   1   1   0
-        1   0   0   0   1
-        1   0   1   0   0
-        1   1   0   0   0
-        1   1   1   1   1
+        if ((self.op1^ value) ^ self.op2) & 0x10 > 0:
+            self.flags.setFlag("A",True)
+        else:
+            self.flags.setFlag("A",False)
+        
+        if value > 255:
+            self.flags.setFlag("C",True)
+        else:
+            self.flags.setFlag("C",False)
 
-        e1,e2
-        r
-
-        for e1 in range 255:
-            for e2 in range 255
-                r := e1-e2 complemento 2
-        '''
+        self.updateFlags(value)
+        return x
+        
+    '''
     # fill in 0 with bits 01 -> 0001
     def leftFilled(self,value):
         n = 0
@@ -140,6 +155,14 @@ class ALU:
             n += 1
         return t+value
     def BCD(self):
+        if(self.op1 & 0x0f)>9 or self.flags.getFlag("A"):
+            self.op1 += 0x06
+            self.flags.setFlag("A",True)
+        
+        if(self.op1>0x9f) or self.flags.getFlag("C"):
+            self.op1+=0x60
+            self.flags.setFlag("C",True)
+        '''
         # value is int so...
         digits = str(self.op1)
         bcds = ""
@@ -148,7 +171,6 @@ class ALU:
             bcds += binary
 
         res = int(bcds, 2)
-
         if(res > 0x0f):
             self.flags.setFlag("A", True)
         else:
@@ -159,8 +181,9 @@ class ALU:
             self.flags.setFlag("C", True)
         else:
             self.flags.setFlag("C", False)
-        self.updateFlags(res)
-        return res
+        '''
+        self.updateFlags(self.op1)
+        return self.op1
 
     def RLC(self):
         A = self.op1
@@ -176,13 +199,16 @@ class ALU:
         carry = (A & 0x01) << 7
         A = A >> 1
         A = A | carry
-        self.flags.setFlag("C", carry)
+        if carry:
+            self.flags.setFlag("C", True)
+        else:
+            self.flags.setFlag("C", False)
         return A
 
     def doMemoryPair(self):
         H = self.op1
         L = self.op2
-        return (H << 4) | L
+        return (H << 8) | L
 
     def INX(self, isPair=True):
         pair = 0
@@ -206,8 +232,8 @@ class ALU:
 if __name__ == "__main__":
     alu = ALU()
 
-    alu.setOP1(25)
-    alu.setOP2(5)
+    alu.setOP1(5)
+    alu.setOP2(6)
     print("AND", alu.AND())
     alu.flags.displayFlags()
     print("OR", alu.OR())

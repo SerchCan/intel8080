@@ -2,6 +2,7 @@ class Banderas:
     def __init__(self):
         self.flagNames = ["Z", "S", "C", "P", "A"]
         self.flags = {}
+        #self.PSW=[0,0,0,0,0,0,0,0]
         for flag in self.flagNames:
             self.flags[flag] = False
 
@@ -12,6 +13,7 @@ class Banderas:
         return self.flags[flag.upper()]
 
     def getPSWRegister(self):
+        #return self.PSW
         order = ['S', 'Z', 0, 'A', 0, 'P', 1, 'C']
         bit = 7
 
@@ -29,6 +31,7 @@ class Banderas:
         for i, val in enumerate(values):
             if(order[i] != 0 and order[i] != 1):
                 self.setFlag(order[i], int(val))
+            #self.PSW[i]=int(val)
 
     def displayFlags(self):
         print("PSW: ", end="")
@@ -46,7 +49,6 @@ class Banderas:
 if __name__ == "__main__":
     b = Banderas()
     b.setFlag("C", 1)
-    b.setFlag("z", 1)
+    b.setFlag("P", 1)
     b.displayFlags()
-
-    print(b.getPSWRegister())
+    print(bin(b.getPSWRegister()))
