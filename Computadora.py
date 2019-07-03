@@ -28,7 +28,7 @@ class Computer:
         self.cpu.getRegisters().displayRegisters()
         print("PC =", hex(self.cpu.getPC()))
         print("SP =", hex(self.cpu.getSP()))
-        instruction = 0#input(">").upper()
+        instruction = input(">").upper()
         if instruction == "Q":
             self.cpu.setStatus(True)  # halt
         elif instruction == "A":
