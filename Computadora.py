@@ -1,3 +1,4 @@
+import sys;
 from CPU import CPU
 from Memoria import Memory
 from Puertos import Puertos
@@ -28,7 +29,7 @@ class Computer:
         self.cpu.getRegisters().displayRegisters()
         print("PC =", hex(self.cpu.getPC()))
         print("SP =", hex(self.cpu.getSP()))
-        instruction = input(">").upper()
+        instruction = 0 #input(">").upper()
         if instruction == "Q":
             self.cpu.setStatus(True)  # halt
         elif instruction == "A":
@@ -79,5 +80,8 @@ d 0
 v 23
 '''
 if __name__ == "__main__":
-    c = Computer()
-    c.execute()
+    if len(sys.argv) < 2:
+        print("I need rom file")
+    else:
+        c = Computer(sys.argv[1])
+        c.execute()
